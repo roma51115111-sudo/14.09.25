@@ -1,0 +1,775 @@
+
+/*   НУЖНО ДОБАВИТЬ РУТ С ОСНОВНІМИ ЦВЕТАМИ, КОТОРЫЕ ДОЛЖЕН ВЫБРАТЬ ЗАКАЗЧИК*/
+h1,
+h2,
+h3,
+h4,
+p,
+ul {
+    margin: 0;
+    padding: 0;
+
+}
+
+img {
+    display: block;
+}
+
+.list {
+    list-style: none;
+}
+
+.link {
+    text-decoration: none;
+}
+
+body {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 130%;
+    color: black;
+
+}
+
+.container {
+    width: 1680px;
+    margin-left: auto;
+    margin-right: auto;
+    
+}
+
+/*      ******  HEADER  ******    */
+
+.header{
+    
+    position: fixed;
+    width: 100%;
+    z-index: 10;
+    background: transparent;
+    transition: background 0.5s ease, opacity 0.5s ease;
+    opacity: 1;
+    display: flex;
+    align-items: center;
+}   
+
+header.scrolled {
+    background: black; }
+
+
+header.hidden {
+    opacity: 0;
+    pointer-events: none;     }
+
+/*.logo-block{
+    width: 208px;
+    height: 62px;
+    /*padding: 18px 80px;
+    /*border: 1px solid #DADADA;
+    color: black;
+
+}
+*/
+.logo {
+    width: 210px;
+    margin-left: 137px;
+        
+}
+
+.header-wrap {
+    display: flex;
+    justify-content: space-between;
+    
+    align-items: center;
+    
+
+}
+
+/*.left-list {
+    margin-right: 137px;
+}*/
+
+.nav-menu {
+    
+    display: flex;
+    align-items: center;
+    gap: 334px;
+    width: 1680px;
+    justify-content: space-between;
+
+}
+
+.nav-item{
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 130%;
+    color: #ffffff;
+    position: relative;
+}
+
+.nav-item::after{
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 3px;
+    background: #FFFFFF;
+    bottom: -7px;
+    left: 50%;
+    transition: all 0.3s ease;
+}
+
+.nav-item:hover::after{
+    width: 100%;
+    left: 0;
+}
+
+
+.menu-list{
+    display: flex;
+    gap: 70px;
+}
+
+/*  *****    HERO   ******  */
+
+.hero {
+    background-color: #000000;
+    padding-top: 200px;
+    padding-bottom: 190px;
+    position: relative;
+    overflow: hidden;
+}
+.hero video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0; 
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    /* размытие */
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    z-index: 1;
+}
+
+.overlay.visible {
+    opacity: 1; 
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    color: white;
+    opacity: 0;
+    padding-bottom: 74px;
+    /*transform: perspective(600px)  translateY(40px);
+    transition: opacity 1s ease, transform 1s ease; */
+    
+    
+}
+
+/* Класс, который появится при старте второго видео */
+.hero-content.visible {
+    opacity: 1;
+    /*transform: perspective(600px)  translateY(0); 
+    */
+} 
+
+.hero-title {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-weight: 600;
+    font-size: 100px;
+    line-height: 100%;
+    margin-bottom: 40px;
+    width: 723px;
+    
+}
+
+.hero-title span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.hero-title span.visible {
+    opacity: 1;
+    transform: translateY(0); }
+
+.hero-text {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 130%;
+    margin-bottom: 90px;
+}
+
+.hero-btn{
+    font-family: inherit;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 130%;
+    
+    
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    color: #FFFFFF;
+    border: none;
+    transform: rotate(-25deg) skew(25deg);
+    transform-style: preserve-3d;
+    position: relative;
+    background: transparent;
+    white-space: nowrap;
+
+    
+}
+
+/*.hero-btn::before{
+    content: "";
+        position: absolute;
+        top: 5px;
+        left: -9px;
+        width: 9px;
+        height: 100%;
+        background: #2a2a2a;
+        transform: skewY(-49deg);
+
+}
+*/
+.hero-btn span {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 225px;
+    height: 70px;
+    background: #000000;
+    color: #fff;
+    font-size: 25px;
+    transition: 1.1s ease-out;
+    padding: 19px 32px; }
+
+.hero-btn:hover span {
+    z-index: 1000;
+    transition: 0.3s;
+    color: #fff;
+    }
+    
+.hero-btn:hover span:nth-child(5) {
+    transform: translate(40px, -40px);
+    opacity: 1;
+    }
+    
+.hero-btn:hover span:nth-child(4) {
+    transform: translate(30px, -30px);
+    opacity: 0.8;
+    }
+
+.hero-btn:hover span:nth-child(3) {
+    transform: translate(20px, -20px);
+    opacity: 0.6;
+    }
+    
+.hero-btn:hover span:nth-child(2) {
+    transform: translate(10px, -10px);
+    opacity: 0.4;
+    }
+    
+.hero-btn:hover span:nth-child(1) {
+    transform: translate(0px, 0px);
+    opacity: 0.2;
+    }
+    
+.hero-btn:active span:nth-child(5) {
+    transform: translate(20px, -20px);
+    opacity: 1;
+    }
+    
+.hero-btn:active span:nth-child(4) {
+    transform: translate(15px, -15px);
+    }
+    
+.hero-btn:active span:nth-child(3) {
+    transform: translate(10px, -10px);
+    }
+    
+.hero-btn:active span:nth-child(2) {
+        transform: translate(5px, -5px);
+    }
+    
+.hero-btn:active span:nth-child(1) {
+    transform: translate(0px, 0px);
+    }
+    
+        .hero-btn:hover span {
+            background: #52e19f;   }
+.hero-text,
+.hero-btn {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.hero-text.visible,
+.hero-btn.visible {
+    opacity: 1;
+    transform: translateY(0); }
+
+
+
+/*      ****** CREATIVE  ******      */
+
+.section-creative{
+    padding-top: 194px;
+    padding-bottom: 100px;
+
+}
+
+.title {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 70px;
+    line-height: 100%;
+    color: #000000;
+}
+
+.creative-block{
+    width: 825px;
+    height: 487px;
+    background-color: #F3F3F3;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 20px;
+    padding-top: 26px;
+    padding-left: 26px;
+    
+}
+.creative-wrap{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    justify-content: space-between;
+}
+
+
+/*      ****** GALLERY  ******      */
+
+
+body {
+    background: #fff;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+.section-gallery {
+    position: relative; /* обязательно, чтобы ::before позиционировался относительно секции */
+    padding: 100px 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+    height: 100vh;
+    display: flex;
+    align-items: flex-end;   /* <-- прижали контент вниз */
+    justify-content: center; /* <-- по центру по горизонтали */
+}
+.section-gallery::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4); /* степень затемнения */
+    z-index: -1; /* чтобы затемнение было за контентом */
+}
+.gallery-container {
+    perspective: 2000px;
+    width: 300px;
+    height: 400px;
+    margin: 0 auto;
+    position: relative;
+    user-select: none;
+}
+.gallery-ring {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    cursor: grab;
+}
+.gallery-img {
+    position: absolute;
+    width: 300px;
+    height: 400px;
+    top: 0;
+    left: 0;
+    background-size: cover;
+    background-position: center;
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    backface-visibility: hidden;
+    transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+    display: flex; /* добавлено */
+    align-items: flex-end; /* добавлено */
+    justify-content: center; /* добавлено */
+}
+
+/* подписи на слайдах */
+.img-caption {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 8px 12px;
+    font-size: 16px;
+    text-align: center;
+    border-radius: 4px 4px 0 0;
+    max-width: 90%;
+    margin-bottom: 10px; /* отступ от нижнего края */
+}
+
+/* Эффект при наведении */
+.gallery-img:hover {
+    transform: scale(1.15) translateY(-10px);
+    box-shadow: 0 20px 30px rgba(0,0,0,0.7);
+    z-index: 10;
+}
+/* Когда галерея в режиме наведения — все картинки затемнены */
+.gallery-ring.hovered .gallery-img {
+    filter: brightness(0.6);
+}
+/* Картинка под курсором — ярче */
+.gallery-ring.hovered .gallery-img:hover {
+    filter: brightness(1.1);
+}
+
+
+/*      ****** CAPABILITIES  ******      */
+
+.section-capabilities{
+    padding-top: 100px;
+    padding-bottom: 100px;
+}
+
+.capabilities-wrap {
+    display: flex;
+    column-gap: 29px;
+    row-gap: 53px;
+    margin-top: 52px;
+    flex-wrap: wrap;
+    
+}
+.mini-title{
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 130%;
+}
+
+.capabilities-title{
+    margin-top: 24px;
+    margin-bottom: 16px;
+}
+.capabilities-text{
+    width: 398px;
+    font-size: 18px;
+}
+
+/*      ****** WHAT CAN WE  ******      */
+
+.section-can{
+    padding-top: 100px;
+    padding-bottom: 100px;
+}
+
+.can-block {
+    width: 825px;
+    height: 520px;
+    background-color: #F3F3F3;
+    padding-top: 26px;
+    padding-left: 26px;
+}
+.can-wrap {
+    display: flex;
+    gap: 30px;
+    margin-top: 50px;
+}
+.before-after-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    border: 1px solid #000000;
+    margin-top: 74px;
+    margin-left: auto;
+    margin-right: auto;
+    cursor: pointer;
+    
+}
+
+
+
+.can-title {
+    margin-bottom: 20px;
+}
+
+.can-text {
+    width: 683px;
+}
+
+/*      ****** HOW WE WORK  ******      */
+
+.section-oder {
+    padding-top: 100px;
+    padding-bottom: 100px;
+}
+.oder-item{
+    display: flex;
+    justify-content: space-between;
+    margin-top: 50px;
+}
+.oder-text{
+    width: 825px;
+    margin-top: 16px;
+}
+.oder-number{
+    display: block;
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 70px;
+    line-height: 100%;
+    color: #E6E6E6;
+    margin-bottom: 30px;
+}
+
+.oder-item:nth-child(2n){
+    flex-direction: row-reverse;
+}
+
+/*      ****** PACKAGES  ******      */
+
+.section-packages{
+    padding-top: 100px;
+    padding-bottom: 100px;
+    
+}
+
+.packages-list {
+    display: flex;
+    margin-top: 50px;
+    gap: 30px;
+}
+
+.chekmark-icon {
+    stroke: currentColor;
+        fill: currentColor;
+    display: inline-block;
+}
+
+.icon {
+   fill: #000000;
+   margin-right: 12px;
+}
+.packages-title {
+    margin-top: 24px;
+    margin-bottom: 16px;
+}
+
+.packages-item-list {
+    margin-top: 12px;
+    margin-bottom: 24px;
+}
+.packages-point{
+    margin-bottom: 12px;
+}
+
+.packages-btn{
+    width: 540px;
+    height: 70px;
+    background-color: #000000;
+    color: #FFFFFF;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 130%;
+    cursor: pointer;
+}
+.packages-btn:hover, .packages-btn:focus {
+    background-color: #DADADA;
+    border: 1px solid #666666;
+    color: #000000;
+}
+
+/*      ****** FEEDBACK  ******      */
+
+.section-feedback {
+    padding-top: 100px;
+    padding-bottom: 200px;
+    
+}
+
+.feedback-form {
+    display: flex;
+    flex-direction: column;
+    max-width: 683px;
+
+}
+
+.feedback-form input[type="text"],
+.feedback-form input[type="email"],
+.feedback-form textarea {
+    padding: 22px 26px;
+    border: 1px solid #D9D9D9;
+    width: 683px;
+    
+
+}
+.feedback-form textarea{
+    height: 151px;
+    margin-bottom: 30px;
+}
+.feedback-form input[type="email"]{
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.checkbox-wrap {
+    display: flex;
+    align-items: center;
+}
+
+.feedback-form .checkbox-wrap input {
+    margin-right: 16px;
+    width: 24px;
+    height: 24px;
+    background-color: #D9D9D9;
+ }
+
+.feedback-form button {
+    cursor: pointer;
+    background-color: #000000;
+    color: #FFFFFF;
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 130%;
+    width: 683px;
+    height: 70px;
+    margin-top: 40px;
+}
+
+.feedback-form button:hover, .feedback-form button:focus {
+    background-color: #DADADA;
+    border: 1px solid #666666;
+    color: #000000;
+
+}
+
+.feedback-text {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 130%;
+    margin-top: 50px;
+    margin-bottom: 40px;
+}
+
+.feedback-img{
+    width: 825px;
+    height: 678px;
+    background-color:#F3F3F3;
+}
+
+.feedback-wrap {
+    display: flex;
+    justify-content: space-between;
+}
+
+
+/*      ****** FOOTER  ******      */
+
+.footer{
+    background-color: #F3F3F3;
+    padding-top: 60px;
+}
+.footer-wrap{
+    display: flex;
+    justify-content: space-between;
+}
+.footer-left {
+    display: flex;
+    flex-direction: column;
+    
+}
+
+.social-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;
+    height: 60px;
+    background-color: #000000;
+}
+
+.social-icon{
+    fill: #FFFFFF;
+    
+}
+
+.social-icon1{
+    stroke: #FFFFFF;
+}
+
+.social-list{
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    margin-bottom: 54px;
+}
+
+.footer-list{
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    
+}
+
+.footer-link{
+    color: #000000;
+}
+
+.grey-text{
+    color: rgba(0, 0, 0, 0.3);
+    margin-bottom: 12px;
+}
+
+.footer-text{
+    margin-bottom: 18px;
+}
+
+.right-footer-list{
+    max-width: 282px;
+}
