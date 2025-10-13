@@ -71,19 +71,26 @@ const $galleryRing = $('.gallery-ring');
 const $imgs = $('.gallery-img');
 const total = $imgs.length;
 const angle = 360 / total;
-const radius = 800;
+const radius = 650;
 let currentRotation = 0;
 let autoRotate; // для хранения анимации
 let activeIndex = null; // индекс активной (увеличенной) картинки
+let targetRotation = 0;  // цель для плавного движения
 
-// Устанавливаем начальные параметры
+// --- Инициализация галереи ---
 gsap.set('.gallery-ring', { rotationY: 0, cursor: 'grab' });
+
+// Правильная установка начальных трансформаций для каждого слайда
 gsap.set('.gallery-img', {
-  rotateY: (i) => i * angle,
-  transformOrigin: `50% 50% ${radius}px`,
-  z: -radius,
-  backfaceVisibility: 'hidden'
+  rotateY: (i) => i * angle,                  // угол по кругу
+  transformOrigin: `50% 50% ${radius}px`,     // радиус (transform-origin Z)
+  z: -radius,                                 // отдаляем от центра
+  scale: 1,                                   // изначальный масштаб
+  backfaceVisibility: 'hidden',               // убираем заднюю сторону
+  transformStyle: 'preserve-3d'               // для корректного 3D эффекта
 });
+
+
 
 // --- Функция обновления фона ---
 function updateBackground(rotation) {
@@ -99,7 +106,37 @@ function updateBackground(rotation) {
     transition: 'background-image 0.5s ease'
   });
 }
+
+// --- Функция обновления масштабов (эффект глубины) ---
+function updateScales(rotation) {
+  $imgs.each(function (i) {
+    // вычисляем относительный угол (нормализуем в 0..360)
+    let rot = (i * angle + rotation) % 360;
+    if (rot < 0) rot += 360;
+
+    // смещаем центр: хотим, чтобы 0deg был в середине экрана
+    // преобразование в диапазон -180..180 удобно для синуса
+    let normalized = rot;
+    if (normalized > 180) normalized -= 360;
+
+    const radians = (normalized * Math.PI) / 180;
+
+    // Пример: центральная — меньше, крайние — больше.
+    // Подбери коэффициенты под желаемый эффект.
+    const centerScale = 0.65;     // масштаб в центре
+    const edgeScale = 0.95;      // масштаб на краю
+    const scale = centerScale + (edgeScale - centerScale) * Math.abs(Math.sin(radians));
+
+    gsap.set(this, { scale: scale });
+  });
+}
+
+
+// Инициализация
 updateBackground(0);
+updateScales(0);
+
+
 
 // --- Автоповорот ---
 function startAutoRotate() {
@@ -110,10 +147,12 @@ function startAutoRotate() {
       currentRotation -= 0.1;
       gsap.set('.gallery-ring', { rotationY: currentRotation });
       updateBackground(currentRotation);
+      updateScales(currentRotation); // <-- добавляем обновление масштаба
     }
   });
 }
-startAutoRotate();
+
+//startAutoRotate();
 
 // --- Управление мышью (drag) ---
 $(window).on('mousedown touchstart', dragStart);
@@ -123,7 +162,6 @@ function dragStart(e) {
   if (e.touches) e.clientX = e.touches[0].clientX;
   xPos = Math.round(e.clientX);
   gsap.set('.gallery-ring', { cursor: 'grabbing' });
-
   if (autoRotate) autoRotate.pause();
   $(window).on('mousemove touchmove', drag);
 }
@@ -131,11 +169,20 @@ function dragStart(e) {
 function drag(e) {
   if (e.touches) e.clientX = e.touches[0].clientX;
   let delta = Math.round(e.clientX) - xPos;
-  currentRotation -= delta;
-  gsap.set('.gallery-ring', { rotationY: currentRotation });
-  updateBackground(currentRotation);
+  targetRotation -= delta;   // обновляем цель, а не текущий поворот
   xPos = Math.round(e.clientX);
 }
+gsap.ticker.add(() => {
+  currentRotation += (targetRotation - currentRotation) * 0.03; // 0.1 — скорость сглаживания
+  gsap.set('.gallery-ring', { rotationY: currentRotation });
+  updateBackground(currentRotation);
+  updateScales(currentRotation);
+});
+
+
+
+
+
 
 function dragEnd() {
   $(window).off('mousemove touchmove', drag);
@@ -144,76 +191,95 @@ function dragEnd() {
 }
 
 // --- Клик по картинке ---
-$imgs.on('click', function () {
-  if (autoRotate) {
-    autoRotate.kill();
-    autoRotate = null; // отключаем автоповорот
-  }
+// $imgs.on('click', function () {
+//   if (autoRotate) {
+//     autoRotate.kill();
+//     autoRotate = null; // отключаем автоповорот
+//   }
 
-  const clickedIndex = $(this).index();
-  let rot = ((currentRotation % 360) + 360) % 360;
-  let currentIndex = Math.round(rot / angle) % total;
-  currentIndex = (total - currentIndex) % total;
+//   const clickedIndex = $(this).index();
+//   let rot = ((currentRotation % 360) + 360) % 360;
+//   let currentIndex = Math.round(rot / angle) % total;
+//   currentIndex = (total - currentIndex) % total;
 
-  let step = clickedIndex - currentIndex;
-  if (step > total / 2) step -= total;
-  if (step < -total / 2) step += total;
+//   let step = clickedIndex - currentIndex;
+//   if (step > total / 2) step -= total;
+//   if (step < -total / 2) step += total;
 
-  currentRotation -= step * angle;
+//   currentRotation -= step * angle;
 
-  // Поворот к выбранной картинке
-  gsap.to('.gallery-ring', {
-    rotationY: currentRotation,
-    duration: 1,
-    ease: 'power2.inOut',
-    onUpdate: () => updateBackground(currentRotation),
-    onComplete: () => {
-      activeIndex = clickedIndex;
+//   // Поворот к выбранной картинке
+//   gsap.to('.gallery-ring', {
+//     rotationY: currentRotation,
+//     duration: 1,
+//     ease: 'power2.inOut',
+//     onUpdate: () => updateBackground(currentRotation),
+//     onComplete: () => {
+//       activeIndex = clickedIndex;
 
-      // сброс масштаба у всех
-      $imgs.each(function(i) {
-        gsap.to(this, { scale: 1, duration: 0.3 });
-      });
+//       // сброс масштаба у всех
+//       $imgs.each(function(i) {
+//         gsap.to(this, { scale: 1, duration: 0.3 });
+//       });
 
-      // увеличиваем выбранную
-      gsap.to($imgs.eq(activeIndex), {
-        scale: 1.5,
-        duration: 0.5,
-        ease: 'power2.out'
-      });
-    }
-  });
-});
+//       // увеличиваем выбранную
+//       gsap.to($imgs.eq(activeIndex), {
+//         scale: 1.5,
+//         duration: 0.5,
+//         ease: 'power2.out'
+//       });
+//     }
+//   });
+// });
+
 
 // --- Наведение с "расступанием" ---
-$imgs.on('mouseenter', function() {
-  $galleryRing.addClass('hovered'); // включаем затемнение
-  if (autoRotate) autoRotate.pause();
+// $imgs.on('mouseenter', function() {
+//   $galleryRing.addClass('hovered'); // включаем затемнение
+//   if (autoRotate) autoRotate.pause();
 
-  const hoveredIndex = $(this).index();
+//   const hoveredIndex = $(this).index();
 
-  if (hoveredIndex !== activeIndex) {
-    gsap.to(this, { scale: 1.3, duration: 0.3, ease: 'power2.out' });
-  }
+//   if (hoveredIndex !== activeIndex) {
+//     gsap.to(this, { scale: 1.3, duration: 0.3, ease: 'power2.out' });
+//   }
 
-  // Сдвигаем остальных
-  $imgs.each(function(i) {
-    if (i !== hoveredIndex) {
-      let diff = i - hoveredIndex;
-      if (diff > total / 2) diff -= total;
-      if (diff < -total / 2) diff += total;
+//   // Сдвигаем остальных
+//   $imgs.each(function(i) {
+//     if (i !== hoveredIndex) {
+//       let diff = i - hoveredIndex;
+//       if (diff > total / 2) diff -= total;
+//       if (diff < -total / 2) diff += total;
 
-      let angleOffset = diff > 0 ? 5 : -5; 
-      gsap.to(this, {
-        rotateY: (i * angle) + angleOffset,
-        transformOrigin: `50% 50% ${radius}px`,
-        z: -radius,
-        duration: 0.3,
-        ease: 'power2.out'
-      });
-    }
-  });
-});
+//       let angleOffset = diff > 0 ? 5 : -5; 
+//       gsap.to(this, {
+//         rotateY: (i * angle) + angleOffset,
+//         transformOrigin: `50% 50% ${radius}px`,
+//         z: -radius,
+//         duration: 0.3,
+//         ease: 'power2.out'
+//       });
+//     }
+//   });
+// });
+
+// $imgs.on('mouseleave', function() {
+//   $galleryRing.removeClass('hovered'); // убираем затемнение
+//   if (autoRotate) autoRotate.resume();
+
+//   $imgs.each(function(i) {
+//     let targetScale = (i === activeIndex) ? 1.5 : 1;
+//     gsap.to(this, {
+//       scale: targetScale,
+//       rotateY: i * angle,
+//       transformOrigin: `50% 50% ${radius}px`,
+//       z: -radius,
+//       duration: 0.3,
+//       ease: 'power2.inOut'
+//     });
+//   });
+// });
+
 
 $imgs.on('mouseleave', function() {
   $galleryRing.removeClass('hovered'); // убираем затемнение
