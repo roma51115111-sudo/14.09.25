@@ -134,8 +134,6 @@
                 <div class="gallery-img" style="background-image:url('images/a3.jpg')">
                 </div>
                 <div class="gallery-img" style="background-image:url('images/a4.jpg')">
-                </div>
-                </div>
               </div>
             </div>
           </section>
@@ -194,35 +192,58 @@
         </section>
         <section class="section-can">
             <div class="container">
-            <h2 class="title">What can we</h2>
-            <div class="can-wrap">
-                <div class="can-block">
-                    <h3 class="mini-title can-title">Surfaces</h3>
-                    <p class="can-text">
-                        You share with us your idea, your mood, your dream. We listen carefully
-                        and propose an artistic solution that combines technology, aesthetics
-                        and your individuality.
-                    </p>
-                </div>
-                <div class="can-block before-after">
-                    <h3 class="mini-title can-title">Before and after</h3>
-                    <p class="can-text">
-                        You share with us your idea, your mood, your dream. We listen carefully
-                        and propose an artistic solution that combines technology, aesthetics
-                        and your individuality.
-                    </p>
-                    <div class="before-after-btn">
-                        <svg width="24" height="24">
-                            <use href="./images/icons.svg#icon-back"></use>
-                        </svg>
-                        <svg width="24" height="24">
-                            <use href="./images/icons.svg#icon-next"></use>
-                        </svg>
+                <h2 class="title">What can we</h2>
+        
+                <div class="can-wrap">
+        
+                    <!-- Первый блок -->
+                    <div class="can-block">
+                        <h3 class="mini-title can-title">Surfaces</h3>
+                        <p class="can-text">
+                            You share with us your idea, your mood, your dream. We listen carefully
+                            and propose an artistic solution that combines technology, aesthetics
+                            and your individuality.
+                        </p>
                     </div>
+        
+                    <!-- Второй блок с видео -->
+                    <div class="can-block">
+                        <h3 class="mini-title can-title">Before and after</h3>
+                        <p class="can-text">
+                            You share with us your idea, your mood, your dream. We listen carefully
+                            and propose an artistic solution that combines technology, aesthetics
+                            and your individuality.
+                        </p>
+        
+                        <div class="compare-wrapper" style="margin-top: 30px;">
+                            <div class="compare-container" id="compareContainer">
+        
+                                <!-- Видео До -->
+                                <video id="videoBefore"
+                                       class="compare-video"
+                                       src="images/wall.mp4"
+                                       autoplay muted loop playsinline></video>
+        
+                                <!-- Видео После -->
+                                <video id="videoAfter"
+                                       class="compare-video"
+                                       src="images/clean_wall.mp4"
+                                       autoplay muted loop playsinline></video>
+        
+                                <!-- Ползунок -->
+                                <div class="slider" id="slider">
+                                    <div class="bar"></div>
+                                    <div class="handle"></div>
+                                </div>
+        
+                            </div>
+                        </div>
+                    </div>
+        
                 </div>
-            </div>
             </div>
         </section>
+             
         <section class="section-oder">
             <div class="container">
             <h2 class="title">How we work</h2>
