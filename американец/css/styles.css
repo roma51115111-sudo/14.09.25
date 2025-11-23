@@ -495,23 +495,40 @@ body {
 
 /*      ****** WHAT CAN WE  ******      */
 
-.section-can{
+.section-can {
     padding-top: 100px;
     padding-bottom: 100px;
 }
 
-.can-block {
-    width: 825px;
-    height: 520px;
-    background-color: #F3F3F3;
-    padding-top: 26px;
-    padding-left: 26px;
-}
 .can-wrap {
     display: flex;
     gap: 30px;
     margin-top: 50px;
+    flex-wrap: wrap; /* чтобы блоки не ломались на маленьких экранах */
 }
+
+/* Первый блок "Surfaces" */
+.can-block {
+    width: 825px;
+    min-height: 520px; /* фиксируем минимальную высоту */
+    background-color: #F3F3F3;
+    padding: 26px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Заголовки и текст */
+.can-title {
+    margin-bottom: 20px;
+}
+
+.can-text {
+    width: 100%;
+    max-width: 683px;
+}
+
+/* Кнопки "Before/After" (если нужны) */
 .before-after-btn {
     display: flex;
     justify-content: center;
@@ -519,23 +536,84 @@ body {
     width: 76px;
     height: 76px;
     border-radius: 50%;
-    border: 1px solid #000000;
-    margin-top: 74px;
-    margin-left: auto;
-    margin-right: auto;
+    border: 1px solid #000;
+    margin: 30px auto 0;
     cursor: pointer;
-    
 }
 
-
-
-.can-title {
-    margin-bottom: 20px;
+/* ===== Видеосравнение (Before/After) ===== */
+.compare-wrapper {
+    width: 100%;
+    height: 380px; /* Можно регулировать по макету */
+    margin-top: 20px;
+    position: relative;
+    background-color: #F3F3F3;
+    overflow: hidden;
+    border-radius: 4px;
 }
 
-.can-text {
-    width: 683px;
+.compare-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
 }
+
+.compare-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Ползунок */
+.slider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    cursor: ew-resize;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+}
+
+.slider .bar {
+    width: 4px;
+    height: 100%;
+    background: #fff;
+}
+
+.slider .handle {
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    border: 2px solid #000;
+    border-radius: 50%;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Адаптив */
+@media screen and (max-width: 900px) {
+    .can-wrap {
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .can-block {
+        width: 100%;
+    }
+
+    .compare-wrapper {
+        height: 300px;
+    }
+}
+
 
 /*      ****** HOW WE WORK  ******      */
 
