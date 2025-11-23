@@ -147,13 +147,14 @@ function dragStart(e) {
 }
 
 function drag(e) {
-  if (e.touches) e.clientX = e.touches[0].clientX;
-  let delta = Math.round(e.clientX) - xPos;
-  currentRotation -= delta;
-  targetRotation = currentRotation;
-  gsap.set('.gallery-ring', { rotationY: currentRotation });
-  updateBackground(currentRotation);
-  xPos = Math.round(e.clientX);
+  if (!isDragging) return;
+  let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  let delta = clientX - xPos;
+
+  const speedFactor = 0.3; // <-- уменьшает скорость прокрутки мышью
+  targetRotation -= delta * speedFactor;
+
+  xPos = clientX;
 }
 
 function dragEnd() {
@@ -163,7 +164,7 @@ function dragEnd() {
   if (autoRotate) autoRotate.resume();
 }
 
-// --- Тикер з логікою "ефект лише під час руху" ---
+// --- Тикер оставляем без изменений, он плавно двигает currentRotation к targetRotation ---
 gsap.ticker.add(() => {
   currentRotation += (targetRotation - currentRotation) * 0.05;
 
@@ -249,4 +250,104 @@ gsap.ticker.add(() => {
 //     });
 //   });
 // });
+  // ===============================
+  // ======== СЛАЙДЕР ВИДЕО ========
+  // ===============================
+  const container = document.getElementById('compareContainer');
+  const slider = document.getElementById('slider');
+  const videoAfter = document.getElementById('videoAfter');
+  
+  if (container && slider && videoAfter) {
+  
+    let isDraggingSlider = false;
+    let autoTween = null;
+    const margin = 10;
+  
+    function setSliderPosition(x, isAuto = false) {
+      const rect = container.getBoundingClientRect();
+  
+      if (x < margin) x = margin;
+      if (x > rect.width - margin) x = rect.width - margin;
+  
+      if (isDraggingSlider && isAuto) return;
+  
+      slider.style.left = x + 'px';
+      const rightInset = Math.round(rect.width - x);
+      videoAfter.style.clipPath = `inset(0px ${rightInset}px 0px 0px)`;
+    }
+  
+    function sliderStartDrag(e) {
+      e.preventDefault();
+      isDraggingSlider = true;
+      if (autoTween) {
+        autoTween.kill();
+        autoTween = null;
+      }
+    }
+  
+    function sliderDrag(e) {
+      if (!isDraggingSlider) return;
+      let clientX = e.clientX;
+      if (e.touches) clientX = e.touches[0].clientX;
+      const rect = container.getBoundingClientRect();
+      setSliderPosition(clientX - rect.left);
+    }
+  
+    function sliderEndDrag() {
+      isDraggingSlider = false;
+    }
+  
+    // === правильная привязка ===
+    slider.addEventListener('mousedown', sliderStartDrag);
+    slider.addEventListener('touchstart', sliderStartDrag, { passive: false });
+  
+    window.addEventListener('mousemove', sliderDrag);
+    window.addEventListener('touchmove', sliderDrag, { passive: false });
+  
+    window.addEventListener('mouseup', sliderEndDrag);
+    window.addEventListener('touchend', sliderEndDrag);
+  
+    // === центруем при загрузке ===
+    function initSlider() {
+      const rect = container.getBoundingClientRect();
+      setSliderPosition(rect.width / 2);
+    }
+    initSlider();
+  
+    // === корректировка при ресайзе ===
+    window.addEventListener('resize', () => {
+      const rect = container.getBoundingClientRect();
+      const left = parseFloat(slider.style.left) || rect.width / 2;
+      setSliderPosition(Math.min(Math.max(left, margin), rect.width - margin));
+    });
+  
+    // === автоматическое движение при появлении ===
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !autoTween) {
+          const rect = container.getBoundingClientRect();
+          const center = rect.width / 2;
+  
+          autoTween = gsap.to({}, {
+            duration: 2,
+            delay: 2,
+            onUpdate: function () {
+              setSliderPosition(center - (center - margin) * this.progress(), true);
+            },
+            onComplete: () => {
+              autoTween = null;
+            }
+          });
+  
+          observer.unobserve(container);
+        }
+      });
+    }, { threshold: 0.5 });
+  
+    observer.observe(container);
+  
+  } else {
+    console.warn('Slider elements not found: compareContainer/slider/videoAfter');
+  }
+  
 });
