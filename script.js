@@ -103,24 +103,36 @@ function updateBackground(rotation) {
 }
 
 function updateScales(rotation) {
-  $imgs.each(function (i) {
+  for (let i = 0; i < total; i++) {
+    const el = $imgs[i];
+
+    // текущий угол изображения
     let rot = (i * angle + rotation) % 360;
     if (rot < 0) rot += 360;
 
-    // нормалізуємо кут [-180, 180]
-    let normalized = rot > 180 ? rot - 360 : rot;
-    const radians = (normalized * Math.PI) / 180;
+    // нормализуем [-180..180]
+    if (rot > 180) rot -= 360;
 
-    // межі масштабів
-    const minScale = 0.85; // центр
-    const maxScale = 1.35; // край
+    const absRot = Math.abs(rot);
 
-    // плавна синусоїда — без tween
-    const scale = maxScale - (Math.cos(radians) + 1) / 2 * (maxScale - minScale);
+    // 🔹 МАСШТАБ: центр = ещё меньше, по бокам увеличивается
+    const minScale = 0.5;  // центральная картинка стала меньше
+    const maxScale = 1.35; // боковые остаются большими
+    const scale = minScale + (absRot / 180) * (maxScale - minScale);
 
-    gsap.set(this, { scale: scale });
-  });
+    // 🔹 ГЛУБИНА: центр дальше, боковые ближе
+    const baseRadius = 850;        
+    const radiusOffset = (1 - absRot / 180) * 250; // чуть сильнее смещение по Z
+    const z = -baseRadius + radiusOffset;
+
+
+
+    // применяем трансформацию и стили
+    el.style.transform = `rotateY(${i * angle}deg) translateZ(${z}px) scale(${scale})`;
+    el.style.filter = `blur(${blur}px)`;
+  }
 }
+
 
 
 
@@ -136,22 +148,42 @@ let lastRotation = 0;
 $(window).on('mousedown touchstart', dragStart);
 $(window).on('mouseup touchend', dragEnd);
 
+let dragSpeed = 0.3; // глобальная скорость
+
 function dragStart(e) {
   isDragging = true;
-  if (e.touches) e.clientX = e.touches[0].clientX;
+
+  // если это мышь
+  if (!e.touches) {
+    // ПКМ → минимальная скорость
+    if (e.button === 2) {
+      dragSpeed = 0.05;
+    } else {
+      dragSpeed = 0.1;
+    }
+  }
+
+  // если это сенсор
+  if (e.touches) {
+    e.clientX = e.touches[0].clientX;
+    dragSpeed = 0.3; // стандартная скорость для тача
+  }
+
   xPos = Math.round(e.clientX);
   gsap.set('.gallery-ring', { cursor: 'grabbing' });
 
   if (autoRotate) autoRotate.pause();
+
   $(window).on('mousemove touchmove', drag);
 }
+
 
 function drag(e) {
   if (!isDragging) return;
   let clientX = e.touches ? e.touches[0].clientX : e.clientX;
   let delta = clientX - xPos;
 
-  const speedFactor = 0.3; // <-- уменьшает скорость прокрутки мышью
+  const speedFactor = 0.1; // <-- уменьшает скорость прокрутки мышью
   targetRotation -= delta * speedFactor;
 
   xPos = clientX;
@@ -165,18 +197,23 @@ function dragEnd() {
 }
 
 // --- Тикер оставляем без изменений, он плавно двигает currentRotation к targetRotation ---
-gsap.ticker.add(() => {
-  currentRotation += (targetRotation - currentRotation) * 0.05;
+function animate() {
+  requestAnimationFrame(animate);
 
-  if (isDragging || Math.abs(currentRotation - lastRotation) > 0.2) {
-    gsap.set('.gallery-ring', { rotationY: currentRotation });
-    updateBackground(currentRotation);
-    updateScales(currentRotation);
-    lastRotation = currentRotation;
-  } else {
-    gsap.set('.gallery-ring', { rotationY: currentRotation });
-  }
-});
+  // сглаживание
+  currentRotation += (targetRotation - currentRotation) * 0.25; // ускоряем реакцию
+
+  // всегда обновляем визуал
+  $galleryRing[0].style.transform = `rotateY(${currentRotation}deg)`;
+  updateBackground(currentRotation);
+  updateScales(currentRotation);
+
+  lastRotation = currentRotation;
+}
+
+animate();
+
+
 
 
 // --- КЛИК ПО КАРТИНКЕ (ОТКЛЮЧЕН) ---
