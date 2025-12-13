@@ -67,7 +67,13 @@ let xPos = 0;
 const $galleryRing = $('.gallery-ring');
 const $imgs = $('.gallery-img');
 const total = $imgs.length;
-const angle = (360 / total); // зменшує кут на 30%, робить картинки ближчими
+
+// 🔧 FIX 1: переименование, ничего не удаляем
+const galleryAngle = 360 / total;
+
+// 🔧 FIX 2: blur объявлен, строка остается рабочей
+const blur = 0;
+
 const radius = 850;
 
 let currentRotation = 0;
@@ -79,7 +85,7 @@ let targetRotation = 0;
 gsap.set('.gallery-ring', { rotationY: 0, cursor: 'grab' });
 
 gsap.set('.gallery-img', {
-  rotateY: (i) => i * angle,
+  rotateY: (i) => i * galleryAngle,
   transformOrigin: `50% 50% ${radius}px`,
   z: -radius,
   scale: 1,
@@ -90,8 +96,9 @@ gsap.set('.gallery-img', {
 // --- Оновлення фону ---
 function updateBackground(rotation) {
   let rot = ((rotation % 360) + 360) % 360;
-  let index = Math.round(rot / angle) % total;
+  let index = Math.round(rot / galleryAngle) % total;
   index = (total - index) % total;
+
   let bg = $imgs.eq(index).css('background-image');
 
   $('.section-gallery').css({
@@ -106,36 +113,26 @@ function updateScales(rotation) {
   for (let i = 0; i < total; i++) {
     const el = $imgs[i];
 
-    // текущий угол изображения
-    let rot = (i * angle + rotation) % 360;
+    let rot = (i * galleryAngle + rotation) % 360;
     if (rot < 0) rot += 360;
-
-    // нормализуем [-180..180]
     if (rot > 180) rot -= 360;
 
     const absRot = Math.abs(rot);
 
-    // 🔹 МАСШТАБ: центр = ещё меньше, по бокам увеличивается
-    const minScale = 0.5;  // центральная картинка стала меньше
-    const maxScale = 1.35; // боковые остаются большими
+    const minScale = 0.5;
+    const maxScale = 1.35;
     const scale = minScale + (absRot / 180) * (maxScale - minScale);
 
-    // 🔹 ГЛУБИНА: центр дальше, боковые ближе
-    const baseRadius = 850;        
-    const radiusOffset = (1 - absRot / 180) * 250; // чуть сильнее смещение по Z
+    const baseRadius = 850;
+    const radiusOffset = (1 - absRot / 180) * 250;
     const z = -baseRadius + radiusOffset;
 
-
-
-    // применяем трансформацию и стили
-    el.style.transform = `rotateY(${i * angle}deg) translateZ(${z}px) scale(${scale})`;
+    // ❗ НИЧЕГО НЕ УБРАНО
+    el.style.transform =
+      `rotateY(${i * galleryAngle}deg) translateZ(${z}px) scale(${scale})`;
     el.style.filter = `blur(${blur}px)`;
   }
 }
-
-
-
-
 
 // --- Початкова ініціалізація ---
 updateBackground(0);
@@ -148,44 +145,35 @@ let lastRotation = 0;
 $(window).on('mousedown touchstart', dragStart);
 $(window).on('mouseup touchend', dragEnd);
 
-let dragSpeed = 0.3; // глобальная скорость
+let dragSpeed = 0.3;
 
 function dragStart(e) {
   isDragging = true;
 
-  // если это мышь
   if (!e.touches) {
-    // ПКМ → минимальная скорость
-    if (e.button === 2) {
-      dragSpeed = 0.05;
-    } else {
-      dragSpeed = 0.1;
-    }
+    dragSpeed = e.button === 2 ? 0.05 : 0.1;
   }
 
-  // если это сенсор
   if (e.touches) {
     e.clientX = e.touches[0].clientX;
-    dragSpeed = 0.3; // стандартная скорость для тача
+    dragSpeed = 0.3;
   }
 
   xPos = Math.round(e.clientX);
   gsap.set('.gallery-ring', { cursor: 'grabbing' });
 
   if (autoRotate) autoRotate.pause();
-
   $(window).on('mousemove touchmove', drag);
 }
 
-
 function drag(e) {
   if (!isDragging) return;
+
   let clientX = e.touches ? e.touches[0].clientX : e.clientX;
   let delta = clientX - xPos;
 
-  const speedFactor = 0.1; // <-- уменьшает скорость прокрутки мышью
+  const speedFactor = 0.1;
   targetRotation -= delta * speedFactor;
-
   xPos = clientX;
 }
 
@@ -196,15 +184,15 @@ function dragEnd() {
   if (autoRotate) autoRotate.resume();
 }
 
-// --- Тикер оставляем без изменений, он плавно двигает currentRotation к targetRotation ---
+// --- Анімація ---
 function animate() {
   requestAnimationFrame(animate);
 
-  // сглаживание
-  currentRotation += (targetRotation - currentRotation) * 0.25; // ускоряем реакцию
+  currentRotation += (targetRotation - currentRotation) * 0.25;
 
-  // всегда обновляем визуал
-  $galleryRing[0].style.transform = `rotateY(${currentRotation}deg)`;
+  $galleryRing[0].style.transform =
+    `rotateY(${currentRotation}deg)`;
+
   updateBackground(currentRotation);
   updateScales(currentRotation);
 
@@ -212,6 +200,7 @@ function animate() {
 }
 
 animate();
+
 
 
 
@@ -386,5 +375,146 @@ animate();
   } else {
     console.warn('Slider elements not found: compareContainer/slider/videoAfter');
   }
+
+
+// ===============================
+// ===== HERO 3D CAROUSEL =========
+// ===== (НЕ КОНФЛИКТУЕТ) =========
+// ===============================
+(function hero3DCarousel() {
+
+  const root = document.querySelector('.section-hero-carousel');
+  if (!root) return;
+
+  const ring = root.querySelector('.hero-carousel__ring');
+  const cards = [...root.querySelectorAll('.hero-carousel__card')];
+  const total = cards.length;
+
+  if (!ring || total === 0) return;
+
+// --- CONFIG ---
+const density = 1;   // уменьшить расстояние между карточками
+const step = 360 / total * density;
+const RADIUS = 500;
+const DRAG = 0.25;
+const FRICTION = 0.9;
+const SNAP = 0.16;
+
+
+  // --- STATE ---
+  let angle = 0;
+  let velocity = 0;
+  let isDown = false;
+  let lastX = 0;
+
+ // --- LAYOUT ---
+// --- LAYOUT ---
+const TILT_X = -2; // наклон вперёд
+const FULL = step * total;
+const TILT_RAD = Math.abs(TILT_X) * Math.PI / 180;
+
+
+  cards.forEach((card, i) => {
+  const local = -((total - 1) / 2) * step + i * step;
+  card.dataset.local = local;
+
+  const h = card.offsetHeight;
+  const compensateY = Math.tan(TILT_RAD) * (h / 2);
+
+card.style.transform =
+  `translate(-50%, -50%)
+   translateY(${compensateY}px)
+   rotateY(${local}deg)
+   translateZ(${RADIUS}px)
+   rotateX(${TILT_X}deg)`;
+   
+   
+    card.dataset.index = i;
+
+});
+
+
+
+
+function render() {
+  const range = 360;
+
+  cards.forEach((card, i) => {
+    let a = (i * step + angle) % range;
+    if (a < 0) a += range;
+
+    // делаем диапазон [-180, 180]
+    if (a > 180) a -= 360;
+
+    const h = card.offsetHeight;
+    const compensateY = Math.sin(TILT_RAD) * (h / 2);
+
+
+    card.style.transform =
+    `translate(-50%, -50%)
+     translateY(${compensateY}px)
+     rotateY(${a}deg)
+     translateZ(${RADIUS}px)
+     rotateX(${TILT_X}deg)`;  
+  });
+}
+
+
+
   
+
+  // --- SNAP ---
+  function snapAngle() {
+    return Math.round(angle / step) * step;
+  }
+
+  // --- LOOP ---
+  function loop() {
+    if (!isDown) {
+      if (Math.abs(velocity) > 0.01) {
+        angle += velocity;
+        velocity *= FRICTION;
+      } else {
+        angle += (snapAngle() - angle) * SNAP;
+      }
+    }
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  // --- EVENTS (ТОЛЬКО ВНУТРИ КАРУСЕЛИ) ---
+  root.addEventListener('pointerdown', e => {
+    isDown = true;
+    lastX = e.clientX;
+    velocity = 0;
+    root.setPointerCapture(e.pointerId);
+  });
+  
+  root.addEventListener('pointerup', e => {
+    isDown = false;
+    root.releasePointerCapture(e.pointerId);
+  });
+  
+  root.addEventListener('pointercancel', e => {
+    isDown = false;
+    root.releasePointerCapture(e.pointerId);
+  });
+  
+  root.addEventListener('pointermove', e => {
+    if (!isDown || e.buttons !== 1) return;
+  
+    const dx = e.clientX - lastX;
+    lastX = e.clientX;
+  
+    angle += dx * DRAG;
+    velocity = dx * DRAG * 0.5;
+  });
+  
+  
+  // --- START ---
+  render();
+  requestAnimationFrame(loop);
+
+})();
+
 });
