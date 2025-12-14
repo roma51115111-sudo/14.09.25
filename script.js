@@ -399,6 +399,8 @@ const RADIUS = 500;
 const DRAG = 0.25;
 const FRICTION = 0.9;
 const SNAP = 0.16;
+const DRAG_LEFT = 0.12;   // мягко
+const DRAG_RIGHT = 0.05;  // быстрее
 
 
   // --- STATE ---
@@ -406,6 +408,8 @@ const SNAP = 0.16;
   let velocity = 0;
   let isDown = false;
   let lastX = 0;
+  let activeButton = null;
+
 
  // --- LAYOUT ---
 // --- LAYOUT ---
@@ -484,30 +488,49 @@ function render() {
 
   // --- EVENTS (ТОЛЬКО ВНУТРИ КАРУСЕЛИ) ---
   root.addEventListener('pointerdown', e => {
+    // только ЛКМ или ПКМ
+    if (e.button !== 0 && e.button !== 2) return;
+  
     isDown = true;
+    activeButton = e.button;
+  
     lastX = e.clientX;
     velocity = 0;
     root.setPointerCapture(e.pointerId);
   });
   
+  
   root.addEventListener('pointerup', e => {
     isDown = false;
+    activeButton = null;
     root.releasePointerCapture(e.pointerId);
   });
   
   root.addEventListener('pointercancel', e => {
     isDown = false;
+    activeButton = null;
     root.releasePointerCapture(e.pointerId);
   });
   
+  
   root.addEventListener('pointermove', e => {
-    if (!isDown || e.buttons !== 1) return;
+    if (!isDown || e.buttons === 0) return;
   
     const dx = e.clientX - lastX;
     lastX = e.clientX;
   
-    angle += dx * DRAG;
-    velocity = dx * DRAG * 0.5;
+    // 1 — левая кнопка, 2 — правая
+    const dragFactor = (e.buttons === 2)
+      ? DRAG_RIGHT
+      : DRAG_LEFT;
+  
+    angle += dx * dragFactor;
+    velocity = dx * dragFactor * 0.5;
+  });
+  
+  
+  root.addEventListener('contextmenu', e => {
+    e.preventDefault();
   });
   
   
