@@ -379,7 +379,7 @@ animate();
 
 // ===============================
 // ===== HERO 3D CAROUSEL =========
-// ===== (НЕ КОНФЛИКТУЕТ) =========
+// ===== Framer-feel Engine =======
 // ===============================
 (function hero3DCarousel() {
 
@@ -389,155 +389,198 @@ animate();
   const ring = root.querySelector('.hero-carousel__ring');
   const cards = [...root.querySelectorAll('.hero-carousel__card')];
   const total = cards.length;
+  if (!ring || !total) return;
 
-  if (!ring || total === 0) return;
+  // ------------------
+  // CONFIG
+  // ------------------
+  const RADIUS = 500;
+  const density = 1;
+  const step = 360 / total * density;
 
-// --- CONFIG ---
-const density = 1;   // уменьшить расстояние между карточками
-const step = 360 / total * density;
-const RADIUS = 500;
-const DRAG = 0.25;
-const FRICTION = 0.9;
-const SNAP = 0.16;
-const DRAG_LEFT = 0.12;   // мягко
-const DRAG_RIGHT = 0.05;  // быстрее
+  const DRAG_LEFT = 0.12;
+  const DRAG_RIGHT = 0.05;
 
+  const INERTIA_SCALE = 8;
 
-  // --- STATE ---
+  const SNAP_EASE = "expo.out";
+  const INERTIA_EASE = "power2.out";
+
+  const ACTIVE_BOOST = 90;
+  const NEAR_BOOST = 45;
+
+  const ACTIVE_SCALE = 1.1;
+  const NEAR_SCALE = 1.04;
+
+  const TILT_X = -2;
+  const TILT_RAD = Math.abs(TILT_X) * Math.PI / 180;
+
+  // ------------------
+  // STATE
+  // ------------------
   let angle = 0;
   let velocity = 0;
-  let isDown = false;
   let lastX = 0;
-  let activeButton = null;
+  let isDown = false;
+  let tween = null;
+  let targetAngle = 0;
+  
+  const setRing = gsap.quickSetter(ring, "rotateY", "deg");
 
-
- // --- LAYOUT ---
-// --- LAYOUT ---
-const TILT_X = -2; // наклон вперёд
-const FULL = step * total;
-const TILT_RAD = Math.abs(TILT_X) * Math.PI / 180;
-
-
+  // ------------------
+  // SCENE LAYOUT once
+  // ------------------
   cards.forEach((card, i) => {
-  const local = -((total - 1) / 2) * step + i * step;
-  card.dataset.local = local;
-
-  const h = card.offsetHeight;
-  const compensateY = Math.tan(TILT_RAD) * (h / 2);
-
-card.style.transform =
-  `translate(-50%, -50%)
-   translateY(${compensateY}px)
-   rotateY(${local}deg)
-   translateZ(${RADIUS}px)
-   rotateX(${TILT_X}deg)`;
-   
-   
-    card.dataset.index = i;
-
-});
-
-
-
-
-function render() {
-  const range = 360;
-
-  cards.forEach((card, i) => {
-    let a = (i * step + angle) % range;
-    if (a < 0) a += range;
-
-    // делаем диапазон [-180, 180]
-    if (a > 180) a -= 360;
-
+    const local = -((total - 1) / 2) * step + i * step;
+    card.dataset.local = local;
+  
     const h = card.offsetHeight;
-    const compensateY = Math.sin(TILT_RAD) * (h / 2);
-
-
-    card.style.transform =
-    `translate(-50%, -50%)
-     translateY(${compensateY}px)
-     rotateY(${a}deg)
-     translateZ(${RADIUS}px)
-     rotateX(${TILT_X}deg)`;  
+    const compensateY = Math.tan(TILT_RAD) * (h / 2);
+  
+    card.style.setProperty('--z', '0px');
+    card.style.setProperty('--scale', '1');
+  
+    card.style.transform = `
+      translate(-50%, -50%)
+      translateY(${compensateY}px)
+      rotateY(${local}deg)
+      translateZ(calc(${RADIUS}px + var(--z)))
+      rotateX(${TILT_X}deg)
+      scale3d(var(--scale), var(--scale), 1)
+    `;
+  
+    card.style.transformStyle = "preserve-3d";
+    card.style.backfaceVisibility = "hidden";
   });
-}
-
-
-
   
 
-  // --- SNAP ---
-  function snapAngle() {
-    return Math.round(angle / step) * step;
-  }
-
-  // --- LOOP ---
-  function loop() {
-    if (!isDown) {
-      if (Math.abs(velocity) > 0.01) {
-        angle += velocity;
-        velocity *= FRICTION;
-      } else {
-        angle += (snapAngle() - angle) * SNAP;
+  // ------------------
+  // DEPTH ENGINE
+  // ------------------
+  function updateDepth() {
+    const front = -angle;
+  
+    cards.forEach(card => {
+      const local = parseFloat(card.dataset.local);
+      const diff = Math.abs(((local + front + 540) % 360) - 180);
+  
+      let boost = 0;
+      let scale = 1;
+      let opacity = 1;
+  
+      if (diff < step * 0.75) {
+        boost = ACTIVE_BOOST;
+        scale = ACTIVE_SCALE;
+      } else if (diff < step * 1.5) {
+        boost = NEAR_BOOST;
+        scale = NEAR_SCALE;
       }
-    }
-    render();
+  
+      card.style.setProperty('--z', `${boost}px`);
+      card.style.setProperty('--scale', scale);
+      card.style.opacity = opacity;
+    });
+  }
+  
+
+  // ------------------
+  // RAF LOOP
+  // ------------------
+  function loop() {
+    angle += (targetAngle - angle) * 0.08; // 👈 магия
+    setRing(angle);
+    updateDepth();
     requestAnimationFrame(loop);
   }
+  
 
-  // --- EVENTS (ТОЛЬКО ВНУТРИ КАРУСЕЛИ) ---
-  root.addEventListener('pointerdown', e => {
-    // только ЛКМ или ПКМ
+  // ------------------
+  // SNAP TARGET
+  // ------------------
+  function getSnapTarget(a) {
+    return Math.round(a / step) * step;
+  }
+
+  // ------------------
+  // POINTER INPUT
+  // ------------------
+  root.addEventListener("pointerdown", e => {
     if (e.button !== 0 && e.button !== 2) return;
-  
+
     isDown = true;
-    activeButton = e.button;
-  
     lastX = e.clientX;
+
+    if (tween) tween.kill();
+    tween = null;
+
     velocity = 0;
+
     root.setPointerCapture(e.pointerId);
   });
-  
-  
-  root.addEventListener('pointerup', e => {
-    isDown = false;
-    activeButton = null;
-    root.releasePointerCapture(e.pointerId);
-  });
-  
-  root.addEventListener('pointercancel', e => {
-    isDown = false;
-    activeButton = null;
-    root.releasePointerCapture(e.pointerId);
-  });
-  
-  
-  root.addEventListener('pointermove', e => {
+
+  root.addEventListener("pointermove", e => {
     if (!isDown || e.buttons === 0) return;
-  
+
     const dx = e.clientX - lastX;
     lastX = e.clientX;
-  
-    // 1 — левая кнопка, 2 — правая
-    const dragFactor = (e.buttons === 2)
-      ? DRAG_RIGHT
-      : DRAG_LEFT;
-  
-    angle += dx * dragFactor;
-    velocity = dx * dragFactor * 0.5;
+
+    const drag = (e.buttons === 2) ? DRAG_RIGHT : DRAG_LEFT;
+
+    angle += dx * drag;
+    targetAngle = angle;
+    velocity = dx * drag;
+
   });
-  
-  
-  root.addEventListener('contextmenu', e => {
+
+  root.addEventListener("pointerup", e => {
+    isDown = false;
+    root.releasePointerCapture(e.pointerId);
+
+    // ---- 1) INERTIA run ----
+    const inertiaTarget = angle + velocity * INERTIA_SCALE;
+    targetAngle = getSnapTarget(inertiaTarget);
+    const snapTarget = getSnapTarget(inertiaTarget);
+
+    let proxy = { v: angle };
+
+    tween = gsap.to(proxy, {
+      v: inertiaTarget,
+      duration: 0.35,
+      ease: INERTIA_EASE,
+      onUpdate() {
+        angle = proxy.v;
+      },
+      onComplete() {
+
+        // ---- 2) SMOOTH SNAP ----
+        tween = gsap.to(proxy, {
+          v: snapTarget,
+          duration: 0.65,
+          ease: SNAP_EASE,
+          onUpdate() {
+            angle = proxy.v;
+          }
+        });
+      }
+    });
+  });
+
+  // ------------------
+  // WHEEL / TRACKPAD
+  // ------------------
+  root.addEventListener("wheel", e => {
     e.preventDefault();
-  });
   
+    const delta = e.deltaY || e.deltaX;
+    const scroll = gsap.utils.clamp(-40, 40, delta * 0.6);
   
-  // --- START ---
-  render();
-  requestAnimationFrame(loop);
+    targetAngle += scroll;
+  }, { passive: false });
+  
+  root.addEventListener("contextmenu", e => e.preventDefault());
+
+  loop();
 
 })();
 
-});
+})();
