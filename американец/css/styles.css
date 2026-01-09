@@ -648,6 +648,7 @@ body {
     background: #111;
     backface-visibility: hidden;
     transform-style: preserve-3d;
+    pointer-events: auto;
 }
 
 .hero-carousel__card img {
@@ -657,7 +658,8 @@ body {
     display: block;
 }
 .section-hero-carousel {
-    touch-action: manipulation;
+    touch-action: pan-y; /* ✅ вертикальный скролл ок, drag — через JS */
+    -ms-touch-action: pan-y;
 }
 
 .hero-carousel__card img {
