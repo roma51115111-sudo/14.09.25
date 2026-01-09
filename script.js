@@ -426,7 +426,15 @@ animate();
   let targetAngle = 0;
   
   const setRing = gsap.quickSetter(ring, "rotateY", "deg");
-
+  
+  // ------------------
+  // SMOOTH FALLOFF FUNCTION
+  // ------------------
+  function smoothFalloff(diff, max) {
+    const x = Math.min(diff / max, 1); // нормализуем от 0 до 1
+    return 1 - Math.pow(x, 3); // кубическая кривая для плавного падения
+  }
+  
   // ------------------
   // SCENE LAYOUT once
   // ------------------
@@ -454,33 +462,44 @@ animate();
   });
   
 
-  // ------------------
-  // DEPTH ENGINE
-  // ------------------
   function updateDepth() {
-    const front = -angle;
-  
+
     cards.forEach(card => {
       const local = parseFloat(card.dataset.local);
-      const diff = Math.abs(((local + front + 540) % 360) - 180);
   
-      let boost = 0;
-      let scale = 1;
-      let opacity = 1;
+      // ✅ ПРАВИЛЬНЫЙ DIFF
+      let diff = ((local + angle + 180) % 360) - 180;
+      const absDiff = Math.abs(diff);
   
-      if (diff < step * 0.75) {
-        boost = ACTIVE_BOOST;
-        scale = ACTIVE_SCALE;
-      } else if (diff < step * 1.5) {
-        boost = NEAR_BOOST;
-        scale = NEAR_SCALE;
-      }
+      // 0 = центр, 1 = сосед
+      const t = Math.min(absDiff / step, 1);
   
-      card.style.setProperty('--z', `${boost}px`);
-      card.style.setProperty('--scale', scale);
-      card.style.opacity = opacity;
+      // ---------- FALL OFF ----------
+      const scale = 1 + (1 - t) * 0.1;
+      const z = (1 - t) * ACTIVE_BOOST;
+      const opacity = 0.4 + (1 - t) * 0.6;
+  
+      card.style.setProperty('--scale', scale.toFixed(3));
+      card.style.setProperty('--z', `${z.toFixed(1)}px`);
+      card.style.opacity = opacity.toFixed(3);
+  
+      // ❌ никакого blur для центральной
+      card.style.filter = absDiff < step * 0.5 ? 'none' : 'blur(1.5px)';
+  
+      const h = card.offsetHeight;
+      const compensateY = Math.tan(TILT_RAD) * (h / 2);
+  
+      card.style.transform = `
+        translate(-50%, -50%)
+        translateY(${compensateY}px)
+        rotateY(${local}deg)
+        translateZ(calc(${RADIUS}px + var(--z)))
+        rotateX(${TILT_X}deg)
+        scale3d(var(--scale), var(--scale), 1)
+      `;
     });
   }
+  
   
 
   // ------------------
