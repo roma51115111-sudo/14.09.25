@@ -62,76 +62,164 @@ document.addEventListener("DOMContentLoaded", function () {
 // ===============================
 // ======== КОД ГАЛЕРЕЇ ==========
 // ===============================
-
 let xPos = 0;
 const $galleryRing = $('.gallery-ring');
 const $imgs = $('.gallery-img');
 const total = $imgs.length;
-
-// 🔧 FIX 1: переименование, ничего не удаляем
 const galleryAngle = 360 / total;
-
-// 🔧 FIX 2: blur объявлен, строка остается рабочей
 const blur = 0;
+const radius = 1000;
 
-const radius = 850;
+// ===============================
+// GSAP VIRTUAL STATE (ENGINE)
+// ===============================
+const galleryState = {
+    rotation: 0,
+    // Добавляем целевую позицию для плавного завершения
+    targetRotation: 0
+};
 
-let currentRotation = 0;
-let autoRotate = null;
-let activeIndex = null;
-let targetRotation = 0;
+// ===============================
+// IDLE SNAP (без автопрокрутки)
+// ===============================
+let idleTimer = null;
+const IDLE_DELAY = 2000; // мс бездействия
 
-// --- Ініціалізація галереї ---
-gsap.set('.gallery-ring', { rotationY: 0, cursor: 'grab' });
+function resetIdleSnap() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+        if (!isDragging) {
+            snapToClosestSlide();
+        }
+    }, IDLE_DELAY);
+}
+
+// Инициализация GSAP
+gsap.set('.gallery-ring', {
+    rotationY: 0,
+    cursor: 'grab'
+});
 
 gsap.set('.gallery-img', {
-  rotateY: (i) => i * galleryAngle,
-  transformOrigin: `50% 50% ${radius}px`,
-  z: -radius,
-  scale: 1,
-  backfaceVisibility: 'hidden',
-  transformStyle: 'preserve-3d'
+    rotateY: (i) => i * galleryAngle,
+    transformOrigin: `50% 50% ${radius}px`,
+    z: -radius,
+    scale: 1,
+    backfaceVisibility: 'hidden',
+    transformStyle: 'preserve-3d'
 });
 
 // --- Оновлення фону ---
 function updateBackground(rotation) {
-  let rot = ((rotation % 360) + 360) % 360;
-  let index = Math.round(rot / galleryAngle) % total;
-  index = (total - index) % total;
-
-  let bg = $imgs.eq(index).css('background-image');
-
-  $('.section-gallery').css({
-    backgroundImage: bg,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center center',
-    transition: 'background-image 0.5s ease'
-  });
+    let rot = ((rotation % 360) + 360) % 360;
+    let index = Math.round(rot / galleryAngle) % total;
+    index = (total - index) % total;
+    let bg = $imgs.eq(index).css('background-image');
+    $('.section-gallery').css({
+        backgroundImage: bg,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        transition: 'background-image 0.5s ease'
+    });
 }
 
 function updateScales(rotation) {
+  const now = Date.now();
+  const deltaTime = now - (lastUpdateTime || now);
+  lastUpdateTime = now;
+  
   for (let i = 0; i < total; i++) {
-    const el = $imgs[i];
-
-    let rot = (i * galleryAngle + rotation) % 360;
-    if (rot < 0) rot += 360;
-    if (rot > 180) rot -= 360;
-
-    const absRot = Math.abs(rot);
-
-    const minScale = 0.5;
-    const maxScale = 1.35;
-    const scale = minScale + (absRot / 180) * (maxScale - minScale);
-
-    const baseRadius = 850;
-    const radiusOffset = (1 - absRot / 180) * 250;
-    const z = -baseRadius + radiusOffset;
-
-    // ❗ НИЧЕГО НЕ УБРАНО
-    el.style.transform =
-      `rotateY(${i * galleryAngle}deg) translateZ(${z}px) scale(${scale})`;
-    el.style.filter = `blur(${blur}px)`;
+      const el = $imgs[i];
+      let rot = (i * galleryAngle + rotation) % 360;
+      if (rot < 0) rot += 360;
+      if (rot > 180) rot -= 360;
+      const absRot = Math.abs(rot);
+      
+      // ИНВЕРТИРОВАННЫЕ НАСТРОЙКИ МАСШТАБА:
+      const centerScale = 0.2;      // Центр - МАЛЕНЬКИЙ (было 0.5)
+      const midScale = 7;         // ~90° - БОЛЬШОЙ (увеличено с 2)
+      const edgeScale = 0.5;        // Края - снова маленькие
+      
+      // ПАРАБОЛИЧЕСКОЕ ИЗМЕНЕНИЕ МАСШТАБА
+      // Используем квадратичную функцию для более плавного перехода
+      let scale;
+      if (absRot <= 90) {
+          // Парабола с минимумом в 0° и максимумом в 90°
+          const t = absRot / 90; // от 0 до 1
+          scale = centerScale + (midScale - centerScale) * (1 - Math.pow(1 - t, 2));
+      } else {
+          // Парабола с максимумом в 90° и минимумом в 180°
+          const t = (absRot - 90) / 90; // от 0 до 1
+          scale = midScale + (edgeScale - midScale) * Math.pow(t, 2);
+      }
+      
+      // Настройки глубины (z-position)
+      const baseRadius = 1000;
+      const zOffset = 250; // Увеличено для большего 3D эффекта
+      let zOffsetValue;
+      
+      // Z-позиция тоже следует за масштабом
+      if (absRot <= 90) {
+          const t = absRot / 90;
+          zOffsetValue = zOffset * (1 - Math.pow(1 - t, 2));
+      } else {
+          const t = (absRot - 90) / 90;
+          zOffsetValue = zOffset * (1 - Math.pow(t, 2));
+      }
+      
+      const z = -baseRadius + zOffsetValue;
+      
+      // Применяем плавную анимацию
+      if (!el._scaleTween) {
+          el._scaleTween = gsap.to(el, {
+              scale: scale,
+              z: z,
+              duration: 0.3, // Увеличена длительность для плавности
+              ease: "power2.out",
+              overwrite: true,
+              transformOrigin: `50% 50% ${radius}px`,
+              onComplete: () => {
+                  el._scaleTween = null;
+              }
+          });
+      } else {
+          el._scaleTween.vars.scale = scale;
+          el._scaleTween.vars.z = z;
+          el._scaleTween.invalidate().restart();
+      }
+      
+      // Blur эффект - центральная самая четкая, боковые немного размыты
+      const maxBlur = 1.5; // Уменьшено для большей четкости боковых
+      const blurAmount = Math.min((absRot / 180) * maxBlur, maxBlur);
+      
+      gsap.to(el, {
+          filter: `blur(${blurAmount}px)`,
+          duration: 0.3,
+          ease: "power2.out",
+          overwrite: true
+      });
   }
+}
+
+let lastUpdateTime = null;
+
+function snapToClosestSlide() {
+    const rot = galleryState.rotation;
+    const nearestIndex = Math.round(-rot / galleryAngle) % total;
+    const targetRotation = -nearestIndex * galleryAngle;
+    
+    galleryState.targetRotation = targetRotation;
+    
+    gsap.to(galleryState, {
+        rotation: targetRotation,
+        duration: 0.8,
+        ease: "power2.out",
+        onUpdate: () => {
+            // Продолжаем обновлять масштаб во время анимации
+            updateScales(galleryState.rotation);
+            updateBackground(galleryState.rotation);
+        }
+    });
 }
 
 // --- Початкова ініціалізація ---
@@ -139,143 +227,121 @@ updateBackground(0);
 updateScales(0);
 
 let isDragging = false;
-let lastRotation = 0;
+let lastMouseX = 0;
+let velocity = 0;
+let lastTime = 0;
 
 // --- Управління мишею (drag) ---
 $(window).on('mousedown touchstart', dragStart);
 $(window).on('mouseup touchend', dragEnd);
 
-let dragSpeed = 0.3;
-
 function dragStart(e) {
-  isDragging = true;
-
-  if (!e.touches) {
-    dragSpeed = e.button === 2 ? 0.05 : 0.1;
-  }
-
-  if (e.touches) {
-    e.clientX = e.touches[0].clientX;
-    dragSpeed = 0.3;
-  }
-
-  xPos = Math.round(e.clientX);
-  gsap.set('.gallery-ring', { cursor: 'grabbing' });
-
-  if (autoRotate) autoRotate.pause();
-  $(window).on('mousemove touchmove', drag);
+    isDragging = true;
+    clearTimeout(idleTimer);
+    
+    if (e.touches) {
+        e.clientX = e.touches[0].clientX;
+    }
+    
+    lastMouseX = e.clientX;
+    lastTime = Date.now();
+    velocity = 0;
+    
+    gsap.set('.gallery-ring', { cursor: 'grabbing' });
+    $(window).on('mousemove touchmove', drag);
 }
 
 function drag(e) {
-  if (!isDragging) return;
-
-  let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  let delta = clientX - xPos;
-
-  const speedFactor = 0.1;
-  targetRotation -= delta * speedFactor;
-  xPos = clientX;
+    if (!isDragging) return;
+    resetIdleSnap();
+    
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const deltaX = clientX - lastMouseX;
+    const currentTime = Date.now();
+    const deltaTime = currentTime - lastTime;
+    
+    if (deltaTime > 0) {
+        velocity = -deltaX * 0.5; // Сохраняем скорость для инерции
+    }
+    
+    // Применяем вращение
+    galleryState.rotation -= deltaX * 0.4;
+    lastMouseX = clientX;
+    lastTime = currentTime;
 }
 
 function dragEnd() {
-  isDragging = false;
-  $(window).off('mousemove touchmove', drag);
-  gsap.set('.gallery-ring', { cursor: 'grab' });
-  if (autoRotate) autoRotate.resume();
+    if (!isDragging) return;
+    
+    isDragging = false;
+    $(window).off('mousemove touchmove', drag);
+    gsap.set('.gallery-ring', { cursor: 'grab' });
+    
+    // Добавляем инерцию
+    if (Math.abs(velocity) > 0.1) {
+        const inertiaTween = gsap.to(galleryState, {
+            rotation: galleryState.rotation + velocity * 10,
+            duration: 1,
+            ease: "power2.out",
+            onUpdate: () => {
+                // Обновляем масштаб во время инерции
+                updateScales(galleryState.rotation);
+                updateBackground(galleryState.rotation);
+            },
+            onComplete: () => {
+                resetIdleSnap();
+            }
+        });
+    } else {
+        resetIdleSnap();
+    }
 }
 
-// --- Анімація ---
+// ===============================
+// CLICK NAVIGATION — SMOOTH
+// ===============================
+$imgs.on('click', function() {
+    if (isDragging) return;
+    
+    const i = $(this).index();
+    const targetRotation = -i * galleryAngle;
+    
+    gsap.to(galleryState, {
+        rotation: targetRotation,
+        duration: 1.2,
+        ease: "power2.inOut",
+        onUpdate: () => {
+            // Продолжаем обновлять масштаб во время анимации
+            updateScales(galleryState.rotation);
+            updateBackground(galleryState.rotation);
+        }
+    });
+});
+
+// Основной цикл анимации
 function animate() {
-  requestAnimationFrame(animate);
-
-  currentRotation += (targetRotation - currentRotation) * 0.25;
-
-  $galleryRing[0].style.transform =
-    `rotateY(${currentRotation}deg)`;
-
-  updateBackground(currentRotation);
-  updateScales(currentRotation);
-
-  lastRotation = currentRotation;
+    requestAnimationFrame(animate);
+    
+    const currentRotation = galleryState.rotation;
+    $galleryRing[0].style.transform = `rotateY(${currentRotation}deg)`;
+    
+    // Всегда обновляем фон и масштаб
+    updateBackground(currentRotation);
+    updateScales(currentRotation);
 }
 
+// Запуск анимации
 animate();
 
+// Очистка твинов при уходе со страницы
+window.addEventListener('beforeunload', () => {
+    $imgs.each(function() {
+        if (this._scaleTween) {
+            this._scaleTween.kill();
+        }
+    });
+});
 
-
-
-
-// --- КЛИК ПО КАРТИНКЕ (ОТКЛЮЧЕН) ---
-// $imgs.on('click', function () {
-//   if (autoRotate) {
-//     autoRotate.kill();
-//     autoRotate = null;
-//   }
-//
-//   const clickedIndex = $(this).index();
-//   let rot = ((currentRotation % 360) + 360) % 360;
-//   let currentIndex = Math.round(rot / angle) % total;
-//   currentIndex = (total - currentIndex) % total;
-//
-//   let step = clickedIndex - currentIndex;
-//   if (step > total / 2) step -= total;
-//   if (step < -total / 2) step += total;
-//
-//   currentRotation -= step * angle;
-//
-//   gsap.to('.gallery-ring', {
-//     rotationY: currentRotation,
-//     duration: 1,
-//     ease: 'power2.inOut',
-//     onUpdate: () => updateBackground(currentRotation),
-//     onComplete: () => {
-//       activeIndex = clickedIndex;
-//       $imgs.each(function () {
-//         gsap.to(this, { scale: 1, duration: 0.3 });
-//       });
-//       gsap.to($imgs.eq(activeIndex), { scale: 1.5, duration: 0.5, ease: 'power2.out' });
-//     }
-//   });
-// });
-
-// --- Наведение (ОТКЛЮЧЕНО) ---
-// $imgs.on('mouseenter', function () {
-//   if (autoRotate) autoRotate.pause();
-//
-//   const hoveredIndex = $(this).index();
-//
-//   if (hoveredIndex !== activeIndex) {
-//     gsap.to(this, { scale: 1.3, duration: 0.3, ease: 'power2.out' });
-//   }
-//
-//   $imgs.each(function (i) {
-//     if (i !== hoveredIndex) {
-//       gsap.to(this, {
-//         rotateY: i * angle,
-//         transformOrigin: `50% 50% ${radius}px`,
-//         z: -radius,
-//         duration: 0.3,
-//         ease: 'power2.out'
-//       });
-//     }
-//   });
-// });
-//
-// $imgs.on('mouseleave', function () {
-//   if (autoRotate) autoRotate.resume();
-//
-//   $imgs.each(function (i) {
-//     let targetScale = (i === activeIndex) ? 1.5 : 1;
-//     gsap.to(this, {
-//       scale: targetScale,
-//       rotateY: i * angle,
-//       transformOrigin: `50% 50% ${radius}px`,
-//       z: -radius,
-//       duration: 0.3,
-//       ease: 'power2.inOut'
-//     });
-//   });
-// });
   // ===============================
   // ======== СЛАЙДЕР ВИДЕО ========
   // ===============================
@@ -467,7 +533,7 @@ animate();
     cards.forEach(card => {
       const local = parseFloat(card.dataset.local);
   
-      // ✅ ПРАВИЛЬНЫЙ DIFF
+      // РАВИЛЬНЫЙ DIFF
       let diff = ((local + angle + 180) % 360) - 180;
       const absDiff = Math.abs(diff);
   
@@ -483,7 +549,7 @@ animate();
       card.style.setProperty('--z', `${z.toFixed(1)}px`);
       card.style.opacity = opacity.toFixed(3);
   
-      // ❌ никакого blur для центральной
+      // никакого blur для центральной
       card.style.filter = absDiff < step * 0.5 ? 'none' : 'blur(1.5px)';
   
       const h = card.offsetHeight;
@@ -506,7 +572,7 @@ animate();
   // RAF LOOP
   // ------------------
   function loop() {
-    angle += (targetAngle - angle) * 0.08; // 👈 магия
+    angle += (targetAngle - angle) * 0.08; // магия
     setRing(angle);
     updateDepth();
     requestAnimationFrame(loop);
