@@ -533,14 +533,16 @@ window.addEventListener('beforeunload', () => {
     cards.forEach(card => {
       const local = parseFloat(card.dataset.local);
   
-      // РАВИЛЬНЫЙ DIFF
-      let diff = ((local + angle + 180) % 360) - 180;
+      // ✅ корректная нормализация угла
+      const raw = local + angle;
+      const diff = ((raw + 180) % 360 + 360) % 360 - 180;
       const absDiff = Math.abs(diff);
   
-      // 0 = центр, 1 = сосед
+      const isActive = absDiff < step * 0.45;
+      card.classList.toggle('is-active', isActive);
+  
       const t = Math.min(absDiff / step, 1);
   
-      // ---------- FALL OFF ----------
       const scale = 1 + (1 - t) * 0.1;
       const z = (1 - t) * ACTIVE_BOOST;
       const opacity = 0.4 + (1 - t) * 0.6;
@@ -549,8 +551,7 @@ window.addEventListener('beforeunload', () => {
       card.style.setProperty('--z', `${z.toFixed(1)}px`);
       card.style.opacity = opacity.toFixed(3);
   
-      // никакого blur для центральной
-      card.style.filter = absDiff < step * 0.5 ? 'none' : 'blur(1.5px)';
+      card.style.filter = isActive ? 'none' : 'blur(1.5px)';
   
       const h = card.offsetHeight;
       const compensateY = Math.tan(TILT_RAD) * (h / 2);
@@ -564,7 +565,10 @@ window.addEventListener('beforeunload', () => {
         scale3d(var(--scale), var(--scale), 1)
       `;
     });
+  
   }
+  
+  
   
   
 
