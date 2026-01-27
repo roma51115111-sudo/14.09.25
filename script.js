@@ -130,41 +130,53 @@ function updateScales(rotation) {
   
   for (let i = 0; i < total; i++) {
       const el = $imgs[i];
-      let rot = (i * galleryAngle + rotation) % 360;
-      if (rot < 0) rot += 360;
+      
+      // ВАЖНО: Вычисляем позицию картинки ОТНОСИТЕЛЬНО ЦЕНТРА
+      // 1. Вычисляем угол картинки в кольце
+      let imgAngle = i * galleryAngle;
+      
+      // 2. Учитываем вращение всего кольца
+      let rot = imgAngle + rotation;
+      
+      // 3. Нормализуем угол от -180 до 180 (относительно центра/камеры)
+      rot = rot % 360;
       if (rot > 180) rot -= 360;
+      if (rot < -180) rot += 360;
+      
+      // 4. Используем абсолютное значение для симметрии
       const absRot = Math.abs(rot);
       
-      // ИНВЕРТИРОВАННЫЕ НАСТРОЙКИ МАСШТАБА:
-      const centerScale = 0.2;      // Центр - МАЛЕНЬКИЙ (было 0.5)
-      const midScale = 7;         // ~90° - БОЛЬШОЙ (увеличено с 2)
+      // УСИЛЕННЫЕ инвертированные настройки масштаба:
+      const centerScale = 0.3;      // Центр - ОЧЕНЬ МАЛЕНЬКИЙ
+      const midScale = 20;          // ~90° - ОЧЕНЬ БОЛЬШОЙ
       const edgeScale = 0.5;        // Края - снова маленькие
       
-      // ПАРАБОЛИЧЕСКОЕ ИЗМЕНЕНИЕ МАСШТАБА
-      // Используем квадратичную функцию для более плавного перехода
+      // Параболическое изменение масштаба
       let scale;
       if (absRot <= 90) {
-          // Парабола с минимумом в 0° и максимумом в 90°
-          const t = absRot / 90; // от 0 до 1
-          scale = centerScale + (midScale - centerScale) * (1 - Math.pow(1 - t, 2));
+          // Быстрое увеличение от центра к середине
+          const t = absRot / 90;
+          // Более агрессивная кривая: центральные еще меньше
+          scale = centerScale + (midScale - centerScale) * (1 - Math.pow(1 - t, 8));
       } else {
-          // Парабола с максимумом в 90° и минимумом в 180°
-          const t = (absRot - 90) / 90; // от 0 до 1
-          scale = midScale + (edgeScale - midScale) * Math.pow(t, 2);
+          // Быстрое уменьшение от середины к краям
+          const t = (absRot - 90) / 90;
+          // Быстрое падение
+          scale = midScale + (edgeScale - midScale) * Math.pow(t, 8);
       }
       
       // Настройки глубины (z-position)
       const baseRadius = 1000;
-      const zOffset = 250; // Увеличено для большего 3D эффекта
+      const zOffset = 400;
       let zOffsetValue;
       
-      // Z-позиция тоже следует за масштабом
+      // Z-позиция следует за масштабом
       if (absRot <= 90) {
           const t = absRot / 90;
-          zOffsetValue = zOffset * (1 - Math.pow(1 - t, 2));
+          zOffsetValue = zOffset * (1 - Math.pow(1 - t, 8));
       } else {
           const t = (absRot - 90) / 90;
-          zOffsetValue = zOffset * (1 - Math.pow(t, 2));
+          zOffsetValue = zOffset * (1 - Math.pow(t, 8));
       }
       
       const z = -baseRadius + zOffsetValue;
@@ -174,7 +186,7 @@ function updateScales(rotation) {
           el._scaleTween = gsap.to(el, {
               scale: scale,
               z: z,
-              duration: 0.3, // Увеличена длительность для плавности
+              duration: 0.4,
               ease: "power2.out",
               overwrite: true,
               transformOrigin: `50% 50% ${radius}px`,
@@ -188,16 +200,25 @@ function updateScales(rotation) {
           el._scaleTween.invalidate().restart();
       }
       
-      // Blur эффект - центральная самая четкая, боковые немного размыты
-      const maxBlur = 1.5; // Уменьшено для большей четкости боковых
+      // Blur эффект - центральная самая размытая, боковые четкие
+      const maxBlur = 3; // Увеличиваем blur для центра
       const blurAmount = Math.min((absRot / 180) * maxBlur, maxBlur);
       
       gsap.to(el, {
           filter: `blur(${blurAmount}px)`,
-          duration: 0.3,
+          duration: 0.4,
           ease: "power2.out",
           overwrite: true
       });
+      
+      // ДЕБАГ: можно выводить значения для проверки
+      if (i === 0 && Math.abs(rot) < 5) {
+          console.log("Центральная картинка:", {
+              angle: rot,
+              scale: scale,
+              absRot: absRot
+          });
+      }
   }
 }
 
