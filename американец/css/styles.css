@@ -667,6 +667,49 @@ body {
     user-select: none;
     -webkit-user-drag: none;
 }
+.hero-carousel__caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 28px;
+
+    text-align: center;
+    font-size: 20px;
+    font-weight: 500;
+    color: #fff;
+
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+        opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+
+    pointer-events: none;
+}
+
+.hero-carousel__card.is-active .hero-carousel__caption {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hero-carousel__card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 40%;
+
+    background: linear-gradient(
+        to top,
+        rgba(0,0,0,0.55),
+        rgba(0,0,0,0)
+    );
+
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+}
 
 
 /*      ****** HOW WE WORK  ******      */
